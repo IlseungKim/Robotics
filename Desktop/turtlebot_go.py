@@ -58,78 +58,82 @@ class DrawShape():
 	
         # Here we'll loop through a series of commands
 	odom = Odometry()	
-	
+	wp = [[0,0,0],[3,0,0],[3,3,math.pi/2],[0,0,math.pi]]
 	next_pos =[3, 3, 45*math.pi/180]
 	prev_pos =[-0.01, 0, 0]
-	
+	wp_idx = 1
 	vel = 0.5
 	#psi = 0.0
-	while (abs(self.x - next_pos[0]) > 0.2 or abs(self.y - next_pos[1]) > 0.2 or abs(self.theta - next_pos[2]) > 1.0):
-		if (time.time() - t0 > 0.2):
-			move_cmd = Twist()
+	while(wp_idx<len(wp)):
+		next_pos =wp[wp_idx]
+		prev_pos =wp[wp_idx-1]
+		while (abs(self.x - next_pos[0]) > 0.2 or abs(self.y - next_pos[1]) > 0.2 or abs(self.theta - next_pos[2]) > 1.0):
+			if (time.time() - t0 > 0.2):
+				move_cmd = Twist()
 
-			b = [next_pos[0]-prev_pos[0], next_pos[1]-prev_pos[1]]
-			a = [self.x-prev_pos[0], self.y-prev_pos[1]]
-			det = a[0]*b[1] - a[1]*b[0]
-			abcos = (a[0]*b[0]+a[1]*b[1])/(math.sqrt(a[0]**2+a[1]**2)*math.sqrt(b[0]**2+b[1]**2))
+				b = [next_pos[0]-prev_pos[0], next_pos[1]-prev_pos[1]]
+				a = [self.x-prev_pos[0], self.y-prev_pos[1]]
+				det = a[0]*b[1] - a[1]*b[0]
+				abcos = (a[0]*b[0]+a[1]*b[1])/(math.sqrt(a[0]**2+a[1]**2)*math.sqrt(b[0]**2+b[1]**2))
 
-			if(abcos>=1):
-				psi = 0
-			elif(abcos<=-1):
-				psi = math.pi
-			else:
-				psi = det/abs(det)*math.acos(abcos)
+				if(abcos>=1):
+					psi = 0
+				elif(abcos<=-1):
+					psi = math.pi
+				else:
+					psi = det/abs(det)*math.acos(abcos)
 
-			theta_p = math.atan(b[1]/b[0])
-			theta_e = self.theta-theta_p
-			theta_e = theta_e%(2*math.pi)
+				theta_p = math.atan(b[1]/b[0])
+				theta_e = self.theta-theta_p
+				theta_e = theta_e%(2*math.pi)
 
-			if theta_e > math.pi:
-				theta_e = theta_e - 2*math.pi
-			elif theta_e < -math.pi:
-				theta_e = theta_e + 2*math.pi
+				if theta_e > math.pi:
+					theta_e = theta_e - 2*math.pi
+				elif theta_e < -math.pi:
+					theta_e = theta_e + 2*math.pi
 	
-			e_ld = math.sqrt(a[0]**2+a[1]**2)*math.sin(psi)
-			k_ld = 0.1
+				e_ld = math.sqrt(a[0]**2+a[1]**2)*math.sin(psi)
+				k_ld = 0.1
 			
-			ld = k_ld*vel
-			ld_min = 0.2
-			ld_max = 2
-			if ld >= ld_max:
-				ld = ld_max
-			elif ld<=ld_min:
-				ld = ld_min
+				ld = k_ld*vel
+				ld_min = 0.2
+				ld_max = 2
+				if ld >= ld_max:
+					ld = ld_max
+				elif ld<=ld_min:
+					ld = ld_min
 
-			across=e_ld/ld
-			print("across = [%.2f]"%(across))
-			if across>=1:
-				across=1.0
-			elif across<=-1:
-				across=-1.0
-			k_steer = 0.8
-			theta_g = math.asin(across)
-			alpha = theta_g-theta_e
+				across=e_ld/ld
+				print("across = [%.2f]"%(across))
+				if across>=1:
+					across=1.0
+				elif across<=-1:
+					across=-1.0
+				k_steer = 0.8
+				theta_g = math.asin(across)
+				alpha = theta_g-theta_e
 
-			c = b-a
-			if(math.sqrt(c[0]**2+c[1]**2>1):
-				vel = 2
-			elif(math.sqrt(c[0]**2+c[1]**2>0):
-				vel = 0.5
-			delta = k_steer*alpha
-			move_cmd.angular.z = delta
-			move_cmd.linear.x = vel
+				c = b-a
+				if(math.sqrt(c[0]**2+c[1]**2>1):
+					vel = 2
+				elif(math.sqrt(c[0]**2+c[1]**2>0):
+					vel = 0.5
+				delta = k_steer*alpha
+				move_cmd.angular.z = delta
+				move_cmd.linear.x = vel
 
-			#update turtlebot's pos by odometry
+				#update turtlebot's pos by odometry
 			
 
 			
-			print("[%.2f]x y theta= %.2f %.2f %.2f"%(vel,self.x,self.y,self.theta/math.pi*180))
-		#turn left when positive value
-		    # Publish the commands to the turtlebot node then wait for the next cycle
-		    	#move_cmd.angular.z = move_cmd.angular.z * 1.33 # Offset to correct the rotational speed
+				print("[%.2f]x y theta= %.2f %.2f %.2f"%(vel,self.x,self.y,self.theta/math.pi*180))
+			#turn left when positive value
+			    # Publish the commands to the turtlebot node then wait for the next cycle
+			    	#move_cmd.angular.z = move_cmd.angular.z * 1.33 # Offset to correct the rotational speed
 
-			self.cmd_vel.publish(move_cmd)
-			t0=time.time()
+				self.cmd_vel.publish(move_cmd)
+				t0=time.time()
+		wp_idx +=1
 
 #	r.sleep()
         
