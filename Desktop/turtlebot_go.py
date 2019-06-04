@@ -91,6 +91,7 @@ class DrawShape():
 	
 			e_ld = math.sqrt(a[0]**2+a[1]**2)*math.sin(psi)
 			k_ld = 0.1
+			
 			ld = k_ld*vel
 			ld_min = 0.2
 			ld_max = 2
@@ -109,12 +110,18 @@ class DrawShape():
 			theta_g = math.asin(across)
 			alpha = theta_g-theta_e
 
+			c = b-a
+			if(math.sqrt(c[0]**2+c[1]**2>1):
+				vel = 2
+			elif(math.sqrt(c[0]**2+c[1]**2>0):
+				vel = 0.5
 			delta = k_steer*alpha
 			move_cmd.angular.z = delta
-			move_cmd.linear.x = ld
+			move_cmd.linear.x = vel
 
 			#update turtlebot's pos by odometry
-			vel = ld
+			
+
 			
 			print("[%.2f]x y theta= %.2f %.2f %.2f"%(vel,self.x,self.y,self.theta/math.pi*180))
 		#turn left when positive value
