@@ -113,10 +113,10 @@ class DrawShape():
 				theta_g = math.asin(across)
 				alpha = theta_g-theta_e
 
-				c = b-a
-				if(math.sqrt(c[0]**2+c[1]**2>1):
+				c = [b[0]-a[0],b[1]-a[1]]
+				if(math.sqrt(c[0]**2+c[1]**2>1)):
 					vel = 2
-				elif(math.sqrt(c[0]**2+c[1]**2>0):
+				elif(math.sqrt(c[0]**2+c[1]**2>0)):
 					vel = 0.5
 				delta = k_steer*alpha
 				move_cmd.angular.z = delta
