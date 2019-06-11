@@ -21,7 +21,7 @@ import csv
 
 class DrawShape():
     x = 0
-    y = 0
+    y = 1
     theta = 0
     def __init__(self):
         # initiliaze
@@ -58,91 +58,49 @@ class DrawShape():
 	
         # Here we'll loop through a series of commands
 	odom = Odometry()	
-	wp = [[0,0,0],[3,0,0],[3,3,math.pi/2],[0,0,math.pi]]
-	next_pos =[3, 3, 45*math.pi/180]
-	prev_pos =[-0.01, 0, 0]
-	wp_idx = 1
-	vel = 0.5
-	#psi = 0.0
+	
+	wp =[[3,0,0],[3,3,90],[0,3,180],[0,0,-90]]	
+	
+	wp_idx =1
 	while(wp_idx<len(wp)):
 		next_pos =wp[wp_idx]
 		prev_pos =wp[wp_idx-1]
-		while (abs(self.x - next_pos[0]) > 0.2 or abs(self.y - next_pos[1]) > 0.2 or (abs(abs(self.theta) - abs(next_pos[2])) > 1.0)):
-			if (time.time() - t0 > 0.2):
-				move_cmd = Twist()
+		while (abs(self.x - next_pos[0]) > 0.2 or abs(self.y - next_pos[1]) > 0.2 or abs(self.theta - next_pos[2]) > 5.0):
+#			if (time.time() - t0 > 0.2):
+			move_cmd = Twist()
 
-				b = [next_pos[0]-prev_pos[0], next_pos[1]-prev_pos[1]]
-				if(b[0]==0):
-					b[0]=0.000001
-				a = [self.x-prev_pos[0], self.y-prev_pos[1]]
-				det = a[0]*b[1] - a[1]*b[0]
-				abcos = (a[0]*b[0]+a[1]*b[1])/(math.sqrt(a[0]**2+a[1]**2)*math.sqrt(b[0]**2+b[1]**2))
+			k_rho = 0.3
+			k_alpha = 0.15
+			k_beta =-0.0
 
-				if(abcos>=1):
-					psi = 0
-				elif(abcos<=-1):
-					psi = math.pi
-				else:
-					psi = det/abs(det)*math.acos(abcos)
+			rho = math.sqrt((next_pos[1]-self.y)**2+(next_pos[0]-self.x)**2)
+			lamb = math.atan2(next_pos[1]-self.y,next_pos[0]-self.x)
+			alpha = lamb - self.theta
+			alpha = alpha % (2*math.pi)
+			if alpha > math.pi:
+				alpha = alpha - 2*math.pi
+			elif alpha < -math.pi:
+				alpha = alpha + 2*math.pi
+		
+			beta = -self.theta - alpha
+			beta = beta % (2*math.pi)
+			if beta > math.pi:
+				beta = beta - 2*math.pi
+			elif beta < -math.pi:
+				beta = beta + 2*math.pi
 
-				theta_p = math.atan(b[1]/b[0])
-				theta_e = self.theta-theta_p
-				theta_e = theta_e%(2*math.pi)
+			if rho < 0.2:
+				rho = 0.2
+			move_cmd.angular.z = alpha*k_alpha + beta*k_beta
+			move_cmd.linear.x = rho*k_rho
+					
+			print("[%.2f]x y theta= %.2f %.2f %.2f %.2f"%(rho*k_rho,self.x,self.y,alpha,beta))
+		#turn left when positive value
+		    # Publish the commands to the turtlebot node then wait for the next cycle
+		    	#move_cmd.angular.z = move_cmd.angular.z * 1.33 # Offset to correct the rotational speed
 
-				if theta_e > math.pi:
-					theta_e = theta_e - 2*math.pi
-				elif theta_e < -math.pi:
-					theta_e = theta_e + 2*math.pi
-	
-				e_ld = math.sqrt(a[0]**2+a[1]**2)*math.sin(psi)
-				k_ld = 0.1
-			
-				ld = k_ld*vel
-				ld_min = 0.2
-				ld_max = 2
-				if ld >= ld_max:
-					ld = ld_max
-				elif ld<=ld_min:
-					ld = ld_min
-
-				across=e_ld/ld
-				print("across = [%.2f]"%(across))
-				if across>=1:
-					across=1.0
-				elif across<=-1:
-					across=-1.0
-				k_steer = 0.8
-				theta_g = math.asin(across)
-				alpha = theta_g-theta_e
-
-				c = [b[0]-a[0],b[1]-a[1]]
-				if(math.sqrt(c[0]**2+c[1]**2)>3):
-					vel = 1
-				elif(math.sqrt(c[0]**2+c[1]**2)>1):
-					vel = 0.5
-				elif(math.sqrt(c[0]**2+c[1]**2)>0):
-					vel = 0.3
-				elif(math.sqrt(c[0]**2+c[1]**2)<0.2 and abs(across) < 0.3 ):
-					vel = 0
-				delta = k_steer*alpha
-				move_cmd.angular.z = delta
-				move_cmd.linear.x = vel
-
-				#update turtlebot's pos by odometry
-			
-
-			
-				print("[%.2f]x y theta= %.2f %.2f %.2f"%(vel,self.x,self.y,self.theta/math.pi*180))
-			#turn left when positive value
-			    # Publish the commands to the turtlebot node then wait for the next cycle
-			    	#move_cmd.angular.z = move_cmd.angular.z * 1.33 # Offset to correct the rotational speed
-
-				self.cmd_vel.publish(move_cmd)
-				t0=time.time()
-		wp_idx +=1
-		print("Arrived")
-
-#	r.sleep()
+			self.cmd_vel.publish(move_cmd)
+#			t0=time.time()
         
         ######################################################
     
@@ -158,7 +116,7 @@ class DrawShape():
  	z = data.pose.pose.orientation.z
 	siny = 2.0*(w*z+y*x)
 	cosy = 1.0 - 2.0*(y**2+z**2)
-	self.theta = math.atan2(siny,cosy)
+	self.theta = math.atan2(siny,cosy)/math.pi*180
 		
     # Unsubscribe from the sensor topic and tell the turtlebot to stop moving
     def shutdown(self):
