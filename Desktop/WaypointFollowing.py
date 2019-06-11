@@ -59,13 +59,10 @@ class DrawShape():
         # Here we'll loop through a series of commands
         odom = Odometry()  
         #waypoint를 설정한다. 주어진 waypoint는 한 변이 1미터인 사각형그리고 제자리로 돌아오게 하였다.
-        wp = [[-0.1,0,0],[1,1,math.pi],[0,1,math.pi],[0,0,-math.pi/2]]
+        wp = [[-0.1,0,0],[1,1,0],[0,1,math.pi],[0,0,-math.pi/2]]
         #next_pos와 prev_pos를 설정하기 위하여 index를 1로 설정한다.
         wp_idx = 1
 
-        #waypoint와 충분히 가까워지면 속도에 0.5, 빠르게 주행할 상황에는 2를 사용한다.
-        vel = 0.5
-        fast_vel = 2
         #모든 waypoint를 통과할때까지 while문 실행한다.
         while(wp_idx < len(wp)):
             #next_pos는 도달해야할 waypoint, prev_pos는 이미 도달한 바로 직전 waypoint의 좌표값이다.
@@ -134,7 +131,8 @@ class DrawShape():
                     
                     #alpha는 벡터 b와 로봇의 진행방향이 이루는 각이다. 이 각도에 비례하여 steer을 결정한다.
                     alpha = theta_g-theta_e
-
+                    #c는 현재 로봇의 좌표부터 next_pos까지의 벡터이다.
+                    #로봇과 next_pos사이의 거리인 c값의 norm에 따라 속도를 다르게 설정한다.
                     c = [b[0]-a[0], b[1]-a[1]]
                     if(math.sqrt(c[0]**2+c[1]**2)>2):
                         vel = 1.0
@@ -144,20 +142,20 @@ class DrawShape():
                         vel = 0.3
                     elif(math.sqrt(c[0]**2+c[1]**2)<0.2 and abs(across)<0.3):
                         vel = 0.0
-                    delta = k_steer*alpha
+
+                    beta  = -self.theta - next_pos[2]
+                    beta = -0.5
+                    delta = k_steer*alpha+ k_beta*beta
                     move_cmd.angular.z = delta
                     move_cmd.linear.x = vel
-
-                    #update turtlebot's pos by odometry
-                   
-                
+                    
+                    #robot의 현재 좌표와 방향, 속도를 console에 출력한다.
                     print("[%.2f]x y theta= %.2f %.2f %.2f"%(vel,self.x,self.y,self.theta/math.pi*180),(next_pos[2]/math.pi*180))
-        #turn left when positive value
-            # Publish the commands to the turtlebot node then wait for the next cycle
-                #move_cmd.angular.z = move_cmd.angular.z * 1.33 # Offset to correct the rotational speed
-
+                    
+                    #로봇에 계산된 속도와 각속도를 보낸 후, t0에 현재 시간을 대입한다.
                     self.cmd_vel.publish(move_cmd)
                     t0=time.time()
+            #way_point에 도달하면 다음 way_point를 following하기위해 wp_idx를 1 증가시키고 반복한다.
             wp_idx += 1
             print("ARRIVED")
 
@@ -175,6 +173,7 @@ class DrawShape():
         x = data.pose.pose.orientation.x
         y = data.pose.pose.orientation.y
         z = data.pose.pose.orientation.z
+        #quarternion인 [w,x,y,z]값을 cartesian 좌표의 회전변환인 [roll,yaw,pitch]로 변환한다.
         siny = 2.0*(w*z+y*x)
         cosy = 1.0 - 2.0*(y**2+z**2)
         tmpp = math.atan2(siny,cosy)
